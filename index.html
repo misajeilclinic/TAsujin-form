@@ -224,18 +224,16 @@ let currentSigRowId = null;
 let sigDrawing = false;
 let sigLastX = 0, sigLastY = 0;
 
-/* ── GAS 통신 (JSONP) ── */
+/* ── GAS 통신 (fetch) ── */
 function gasCall(params) {
   return new Promise((resolve, reject) => {
-    const cbName = 'cb_' + Date.now();
-    const script = document.createElement('script');
     const qs = Object.entries(params).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&');
-    script.src = `${GAS_URL}?callback=${cbName}&${qs}`;
-    script.onerror = () => { cleanup(); reject(new Error('네트워크 오류')); };
-    window[cbName] = (data) => { cleanup(); resolve(data); };
-    function cleanup(){ delete window[cbName]; script.remove(); }
-    document.head.appendChild(script);
-    setTimeout(() => { cleanup(); reject(new Error('시간 초과')); }, 15000);
+    const url = `${GAS_URL}?${qs}`;
+    fetch(url, { redirect: 'follow' })
+      .then(r => r.json())
+      .then(resolve)
+      .catch(reject);
+    setTimeout(() => reject(new Error('시간 초과')), 20000);
   });
 }
 
